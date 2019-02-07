@@ -114,7 +114,7 @@ if __name__ == '__main__':
     w_ave_RR = re_shape(np.array([p['weightavg'] for p in RR]))
 
     print('>> Converting pair count to correlation function with Landy & Szalay method')
-    xi = (n_DD - 2. * n_DR + n_RR) / n_RR
+    xi2d = (n_DD - 2. * n_DR + n_RR) / n_RR
 
     s_mid = (s_min + s_max) / 2.
 
