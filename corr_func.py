@@ -98,7 +98,7 @@ if __name__ == '__main__':
     # the data are given in the same s bin, different mu bins order
     s_min = re_shape(np.array([p['smin'] for p in DD]))[:, 0]
     s_max = re_shape(np.array([p['smax'] for p in DD]))[:, 0]
-    mu_max = re_shape(np.array([p['mumax'] for p in DD))[0, :]
+    mu_max = re_shape(np.array([p['mumax'] for p in DD]))[0, :]
 
     # average s in each bin, different for DD, DR and RR
     s_ave_DD = re_shape(np.array([p['savg'] for p in DD]))
