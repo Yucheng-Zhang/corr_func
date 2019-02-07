@@ -50,35 +50,33 @@ if __name__ == '__main__':
     print('>> Loading random file: {}'.format(args.rand))
     rand = load_data_w_pd(args.rand)
 
-    print('>> Getting comoving distance from redshift...')
+    print('>> Getting comoving distance from redshift')
     print('>> fiducial cosmology: H0 = {0:f}, OmegaM_0 = {1:f}'.format(
         args.H0, args.Om0))
     cosmo = cosmo_LCDM(args.H0, args.Om0, 1. - args.Om0)
     data[:, 2] = cosmo.z2chi(data[:, 2])
     rand[:, 2] = cosmo.z2chi(rand[:, 2])
 
-    print('>> Getting bin file for s...')
+    print('>> Getting bin file for s')
     binfile = np.linspace(args.s_min, args.s_max, args.n_s_bins + 1)
 
-    print('>> Computing DD pair count...')
+    print('>> Computing DD pair count')
     DD = DDsmu_mocks(autocorr=1, cosmology=1, nthreads=args.ncpu,
                      mu_max=1.0, nmu_bins=args.n_mu_bins, binfile=binfile,
                      RA1=data[:, 0], DEC1=data[:, 1],
                      CZ1=data[:, 2], weights1=data[:, 3],
                      weight_type='pair_product', is_comoving_dist=True,
                      output_savg=True, verbose=True)
-    save_pc('DD_test.dat', DD)
 
-    print('>> Computing RR pair count...')
+    print('>> Computing RR pair count')
     RR = DDsmu_mocks(autocorr=1, cosmology=1, nthreads=args.ncpu,
                      mu_max=1.0, nmu_bins=args.n_mu_bins, binfile=binfile,
                      RA1=rand[:, 0], DEC1=rand[:, 1],
                      CZ1=rand[:, 2], weights1=rand[:, 3],
                      weight_type='pair_product', is_comoving_dist=True,
                      output_savg=True, verbose=True)
-    save_pc('RR_test.dat', RR)
 
-    print('>> Computing DR pair count...')
+    print('>> Computing DR pair count')
     DR = DDsmu_mocks(autocorr=0, cosmology=1, nthreads=args.ncpu,
                      mu_max=1.0, nmu_bins=args.n_mu_bins, binfile=binfile,
                      RA1=data[:, 0], DEC1=data[:, 1],
@@ -87,6 +85,39 @@ if __name__ == '__main__':
                      CZ2=rand[:, 2], weights2=rand[:, 3],
                      weight_type='pair_product', is_comoving_dist=True,
                      output_savg=True, verbose=True)
-    save_pc('DR_test.dat', DR)
 
-    print('>> Converting pair count to correlation function...')
+    del data
+    del rand
+
+    print('>> Extracting data')
+
+    def re_shape(arr):
+        '''reshape to same s bin for each row'''
+        return np.reshape(arr, args.n_s_bins, args.n_mu_bins)
+    # DD, DR, RR have the same smin, smax and mumax, so use any one
+    # the data are given in the same s bin, different mu bins order
+    s_min = re_shape(np.array([p['smin'] for p in DD]))[:, 0]
+    s_max = re_shape(np.array([p['smax'] for p in DD]))[:, 0]
+    mu_max = re_shape(np.array([p['mumax'] for p in DD))[0, :]
+
+    # average s in each bin, different for DD, DR and RR
+    s_ave_DD = re_shape(np.array([p['savg'] for p in DD]))
+    s_ave_DR = re_shape(np.array([p['savg'] for p in DR]))
+    s_ave_RR = re_shape(np.array([p['savg'] for p in RR]))
+    # pair counts,
+    n_DD = re_shape(np.array([p['npairs'] for p in DD]))
+    n_DR = re_shape(np.array([p['npairs'] for p in DR]))
+    n_RR = re_shape(np.array([p['npairs'] for p in RR]))
+    # average weight
+    w_ave_DD = re_shape(np.array([p['weightavg'] for p in DD]))
+    w_ave_DR = re_shape(np.array([p['weightavg'] for p in DR]))
+    w_ave_RR = re_shape(np.array([p['weightavg'] for p in RR]))
+
+    print('>> Converting pair count to correlation function with Landy & Szalay method')
+    xi = (n_DD - 2. * n_DR + n_RR) / n_RR
+
+    s_mid = (s_min + s_max) / 2.
+
+    print('>> Computing spherically averaged monopole')
+    xi_0 = 0.5 * np.sum(xi2d * mu, axis=1) / args.n_mu_bins
+    print(xi_0)
