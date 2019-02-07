@@ -93,7 +93,7 @@ if __name__ == '__main__':
 
     def re_shape(arr):
         '''reshape to same s bin for each row'''
-        return np.reshape(arr, args.n_s_bins, args.n_mu_bins)
+        return np.reshape(arr, (args.n_s_bins, args.n_mu_bins))
     # DD, DR, RR have the same smin, smax and mumax, so use any one
     # the data are given in the same s bin, different mu bins order
     s_min = re_shape(np.array([p['smin'] for p in DD]))[:, 0]
