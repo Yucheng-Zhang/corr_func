@@ -117,7 +117,10 @@ if __name__ == '__main__':
     xi2d = (n_DD - 2. * n_DR + n_RR) / n_RR
 
     s_mid = (s_min + s_max) / 2.
+    mu_bw = (args.mu_max - 0.) / args.n_mu_bins
+    mu_mid = np.array(
+        [(i - 0.5) * mu_bw for i in range(1, args.n_mu_bins + 1)])
 
     print('>> Computing spherically averaged monopole')
-    xi_0 = 0.5 * np.sum(xi2d * mu, axis=1) / args.n_mu_bins
+    xi_0 = 0.5 * np.sum(xi2d * mu_mid, axis=1) / args.n_mu_bins
     print(xi_0)
