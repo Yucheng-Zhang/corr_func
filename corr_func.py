@@ -142,7 +142,7 @@ if __name__ == '__main__':
     RR_n = n_RR / (n_rand * (n_rand - 1.) / 2.)
 
     print('>> Converting pair count to correlation function with Landy & Szalay method')
-    xi2d = (DD_n - 2. * DR_n + RR_n) / n_RR
+    xi2d = (DD_n - 2. * DR_n + RR_n) / RR_n
 
     s_mid = (s_min + s_max) / 2.
     mu_bw = (args.mu_max - 0.) / args.n_mu_bins
