@@ -75,9 +75,6 @@ if __name__ == '__main__':
     print('>> Getting bin file for s')
     binfile = np.linspace(args.s_min, args.s_max, args.n_s_bins + 1)
 
-    data[:, 3] = np.ones(len(data[:, 3]))
-    rand[:, 3] = np.ones(len(rand[:, 3]))
-
     print('>> Computing DD pair count')
     DD = DDsmu_mocks(autocorr=1, cosmology=1, nthreads=args.ncpu,
                      mu_max=1.0, nmu_bins=args.n_mu_bins, binfile=binfile,
@@ -149,3 +146,6 @@ if __name__ == '__main__':
     save_smu_arr('n_DD_test.dat', n_DD, s_bins, mu_bins)
     save_smu_arr('n_DR_test.dat', n_DR, s_bins, mu_bins)
     save_smu_arr('n_RR_test.dat', n_RR, s_bins, mu_bins)
+    save_pc('DD_test.dat', DD)
+    save_pc('DR_test.dat', DR)
+    save_pc('RR_test.dat', RR)
