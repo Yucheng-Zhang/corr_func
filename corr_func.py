@@ -62,8 +62,13 @@ if __name__ == '__main__':
 
     print('>> Loading data file: {}'.format(args.data))
     data = load_data_w_pd(args.data)
+    n_data = len(data[:, 0])
+    print('>> {0:d} data points'.format(n_data))
+
     print('>> Loading random file: {}'.format(args.rand))
     rand = load_data_w_pd(args.rand)
+    n_rand = len(rand[:, 0])
+    print('>> {0:d} random points'.format(n_rand))
 
     print('>> Getting comoving distance from redshift')
     print('>> fiducial cosmology: H0 = {0:f}, OmegaM_0 = {1:f}'.format(
@@ -131,9 +136,13 @@ if __name__ == '__main__':
     n_DD = n_DD * w_ave_DD
     n_DR = n_DR * w_ave_DR
     n_RR = n_RR * w_ave_RR
+    # normalize counts
+    DD_n = n_DD / (n_data * (n_data - 1.) / 2.)
+    DR_n = n_DR / (n_data * n_rand)
+    RR_n = n_RR / (n_rand * (n_rand - 1.) / 2.)
 
     print('>> Converting pair count to correlation function with Landy & Szalay method')
-    xi2d = (n_DD - 2. * n_DR + n_RR) / n_RR
+    xi2d = (DD_n - 2. * DR_n + RR_n) / n_RR
 
     s_mid = (s_min + s_max) / 2.
     mu_bw = (args.mu_max - 0.) / args.n_mu_bins
@@ -147,9 +156,3 @@ if __name__ == '__main__':
     s_bins = np.concatenate((np.array([s_min[0]]), s_max))
     mu_bins = np.concatenate((np.array([0.]), mu_max))
     save_smu_arr('xi2d_test.dat', xi2d, s_bins, mu_bins)
-    save_smu_arr('n_DD_test.dat', n_DD, s_bins, mu_bins)
-    save_smu_arr('n_DR_test.dat', n_DR, s_bins, mu_bins)
-    save_smu_arr('n_RR_test.dat', n_RR, s_bins, mu_bins)
-    save_pc('DD_test.dat', DD)
-    save_pc('DR_test.dat', DR)
-    save_pc('RR_test.dat', RR)
