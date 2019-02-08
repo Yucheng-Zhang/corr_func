@@ -44,7 +44,7 @@ def save_pc(fn, pc):
 
 def save_smu_arr(fn, smu_arr, s_bins, mu_bins):
     '''Save s mu 2D array.'''
-    header = 'xi(s, mu) with same s for each row\n'
+    header = 'Same s for each row\n'
     header += '{0:d} s bins, with edges:\n'.format(
         len(s_bins) - 1) + np.array_str(s_bins) + '\n'
     header += '{0:d} mu bins, with edges:\n'.format(
@@ -128,9 +128,9 @@ if __name__ == '__main__':
     w_ave_DR = re_shape(np.array([p['weightavg'] for p in DR]))
     w_ave_RR = re_shape(np.array([p['weightavg'] for p in RR]))
     # weighted pair counts
-    n_DD *= w_ave_DD
-    n_DR *= w_ave_DR
-    n_RR *= w_ave_RR
+    n_DD = n_DD * w_ave_DD
+    n_DR = n_DR * w_ave_DR
+    n_RR = n_RR * w_ave_RR
 
     print('>> Converting pair count to correlation function with Landy & Szalay method')
     xi2d = (n_DD - 2. * n_DR + n_RR) / n_RR
