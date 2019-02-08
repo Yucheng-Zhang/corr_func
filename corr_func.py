@@ -75,6 +75,9 @@ if __name__ == '__main__':
     print('>> Getting bin file for s')
     binfile = np.linspace(args.s_min, args.s_max, args.n_s_bins + 1)
 
+    data[:, 3] = np.ones(len(data[:, 3]))
+    rand[:, 3] = np.ones(len(rand[:, 3]))
+
     print('>> Computing DD pair count')
     DD = DDsmu_mocks(autocorr=1, cosmology=1, nthreads=args.ncpu,
                      mu_max=1.0, nmu_bins=args.n_mu_bins, binfile=binfile,
