@@ -143,6 +143,6 @@ if __name__ == '__main__':
     save_pc('DD_test.dat', DD)
     save_pc('DR_test.dat', DR)
     save_pc('RR_test.dat', RR)
-    s_bins = s_min[0] + s_max
-    mu_bins = np.array([0.]) + mu_max
+    s_bins = np.concatenate(s_min[0] + s_max)
+    mu_bins = np.concatenate(np.array([0.]) + mu_max)
     save_xi2d('xi2d_test.dat', xi2d, s_bins, mu_bins)
