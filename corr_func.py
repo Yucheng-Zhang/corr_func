@@ -80,7 +80,7 @@ if __name__ == '__main__':
                      mu_max=1.0, nmu_bins=args.n_mu_bins, binfile=binfile,
                      RA1=data[:, 0], DEC1=data[:, 1],
                      CZ1=data[:, 2], weights1=data[:, 3],
-                     weight_type='pair_product', is_comoving_dist=True,
+                     weight_type='None', is_comoving_dist=True,
                      output_savg=True, verbose=True)
 
     print('>> Computing RR pair count')
@@ -88,7 +88,7 @@ if __name__ == '__main__':
                      mu_max=1.0, nmu_bins=args.n_mu_bins, binfile=binfile,
                      RA1=rand[:, 0], DEC1=rand[:, 1],
                      CZ1=rand[:, 2], weights1=rand[:, 3],
-                     weight_type='pair_product', is_comoving_dist=True,
+                     weight_type='None', is_comoving_dist=True,
                      output_savg=True, verbose=True)
 
     print('>> Computing DR pair count')
@@ -98,7 +98,7 @@ if __name__ == '__main__':
                      CZ1=data[:, 2], weights1=data[:, 3],
                      RA2=rand[:, 0], DEC2=rand[:, 1],
                      CZ2=rand[:, 2], weights2=rand[:, 3],
-                     weight_type='pair_product', is_comoving_dist=True,
+                     weight_type='None', is_comoving_dist=True,
                      output_savg=True, verbose=True)
 
     del data
