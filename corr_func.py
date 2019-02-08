@@ -127,6 +127,10 @@ if __name__ == '__main__':
     w_ave_DD = re_shape(np.array([p['weightavg'] for p in DD]))
     w_ave_DR = re_shape(np.array([p['weightavg'] for p in DR]))
     w_ave_RR = re_shape(np.array([p['weightavg'] for p in RR]))
+    # weighted pair counts
+    n_DD *= w_ave_DD
+    n_DR *= w_ave_DR
+    n_RR *= w_ave_RR
 
     print('>> Converting pair count to correlation function with Landy & Szalay method')
     xi2d = (n_DD - 2. * n_DR + n_RR) / n_RR
