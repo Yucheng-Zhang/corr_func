@@ -7,20 +7,8 @@ from Corrfunc.mocks.DDsmu_mocks import DDsmu_mocks
 from cosmo import cosmo_LCDM
 import argparse
 
-
-def save_pc(fn, pc):
-    header = 'smin   smax   savg   mumax   npairs   weightavg'
-    data = np.array([[p['smin'], p['smax'], p['savg'],
-                      p['mumax'], p['npairs'], p['weightavg']]for p in pc])
-    np.savetxt(fn, data, header=header)
-
-
-def load_data_w_pd(fn):
-    tb = pd.read_table(fn, delim_whitespace=True, comment='#', header=None)
-    return tb.values
-
-
 if __name__ == '__main__':
+    '''Input arguments.'''
     parser = argparse.ArgumentParser(
         description='Compute 2D correlation function.')
     parser.add_argument('-data', default='',
@@ -29,7 +17,7 @@ if __name__ == '__main__':
                         help='Input random file: RA, DEC, Z, weight')
     parser.add_argument('-H0', type=float, default=70.0,
                         help='H0 for fiducial cosmology')
-    parser.add_argument('-Om0', type=float, default=0.25,
+    parser.add_argument('-Om0', type=float, default=0.3,
                         help='OmegaM_0 for fiducial cosmology')
     parser.add_argument('-ncpu', type=int, default=1, help='Number of CPUs')
 
@@ -37,13 +25,40 @@ if __name__ == '__main__':
     parser.add_argument('-n_mu_bins', type=int,
                         default=100, help='Number of linear mu bins')
 
-    parser.add_argument('-s_min', type=float, default=1.0,
+    parser.add_argument('-s_min', type=float, default=0.1,
                         help='Minimum s in [Mpc/h]')
-    parser.add_argument('-s_max', type=float, default=160.0,
+    parser.add_argument('-s_max', type=float, default=160.1,
                         help='Maximum s in [Mpc/h]')
     parser.add_argument('-n_s_bins', type=int, default=32,
                         help='Number of s bins')
     args = parser.parse_args()
+
+
+def save_pc(fn, pc):
+    '''Save the result of DDsmu_mocks.'''
+    header = 'smin   smax   savg   mumax   npairs   weightavg'
+    data = np.array([[p['smin'], p['smax'], p['savg'],
+                      p['mumax'], p['npairs'], p['weightavg']]for p in pc])
+    np.savetxt(fn, data, header=header)
+
+
+def save_xi2d(fn, xi2d, s_bins, mu_bins):
+    '''Save xi2d.'''
+    header = 'xi(s, mu) with same s for each row\n'
+    header += '{0:d} s bins, with edges: '.format(
+        len(s_bins) - 1) + np.array_str(s_bins) + '\n'
+    header += '{0:d} mu bins, with edges: '.format(
+        len(mu_bins) - 1) + np.array_str(mu_bins)
+    np.savetxt(fn, xi2d, header=header)
+
+
+def load_data_w_pd(fn):
+    '''Read input data with pandas.'''
+    tb = pd.read_table(fn, delim_whitespace=True, comment='#', header=None)
+    return tb.values
+
+
+if __name__ == '__main__':
 
     print('>> Loading data file: {}'.format(args.data))
     data = load_data_w_pd(args.data)
@@ -104,7 +119,7 @@ if __name__ == '__main__':
     s_ave_DD = re_shape(np.array([p['savg'] for p in DD]))
     s_ave_DR = re_shape(np.array([p['savg'] for p in DR]))
     s_ave_RR = re_shape(np.array([p['savg'] for p in RR]))
-    # pair counts,
+    # pair counts
     n_DD = re_shape(np.array([p['npairs'] for p in DD]))
     n_DR = re_shape(np.array([p['npairs'] for p in DR]))
     n_RR = re_shape(np.array([p['npairs'] for p in RR]))
@@ -124,3 +139,10 @@ if __name__ == '__main__':
     print('>> Computing spherically averaged monopole')
     xi_0 = 0.5 * np.sum(xi2d * mu_mid, axis=1) / args.n_mu_bins
     print(xi_0)
+
+    save_pc('DD_test.dat', DD)
+    save_pc('DR_test.dat', DR)
+    save_pc('RR_test.dat', RR)
+    s_bins = s_min[0] + s_max
+    mu_bins = np.array([0.]) + mu_max
+    save_xi2d('xi2d_test.dat', xi2d, s_bins, mu_bins)
