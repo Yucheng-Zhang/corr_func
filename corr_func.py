@@ -42,14 +42,14 @@ def save_pc(fn, pc):
     np.savetxt(fn, data, header=header)
 
 
-def save_xi2d(fn, xi2d, s_bins, mu_bins):
-    '''Save xi2d.'''
+def save_smu_arr(fn, smu_arr, s_bins, mu_bins):
+    '''Save s mu 2D array.'''
     header = 'xi(s, mu) with same s for each row\n'
-    header += '{0:d} s bins, with edges: '.format(
+    header += '{0:d} s bins, with edges:\n'.format(
         len(s_bins) - 1) + np.array_str(s_bins) + '\n'
-    header += '{0:d} mu bins, with edges: '.format(
+    header += '{0:d} mu bins, with edges:\n'.format(
         len(mu_bins) - 1) + np.array_str(mu_bins)
-    np.savetxt(fn, xi2d, header=header)
+    np.savetxt(fn, smu_arr, header=header)
 
 
 def load_data_w_pd(fn):
@@ -140,9 +140,9 @@ if __name__ == '__main__':
     xi_0 = 0.5 * np.sum(xi2d * mu_mid, axis=1) / args.n_mu_bins
     print(xi_0)
 
-    save_pc('DD_test.dat', DD)
-    save_pc('DR_test.dat', DR)
-    save_pc('RR_test.dat', RR)
     s_bins = np.concatenate((np.array([s_min[0]]), s_max))
     mu_bins = np.concatenate((np.array([0.]), mu_max))
-    save_xi2d('xi2d_test.dat', xi2d, s_bins, mu_bins)
+    save_smu_arr('xi2d_test.dat', xi2d, s_bins, mu_bins)
+    save_smu_arr('n_DD_test.dat', n_DD, s_bins, mu_bins)
+    save_smu_arr('n_DR_test.dat', n_DR, s_bins, mu_bins)
+    save_smu_arr('n_RR_test.dat', n_RR, s_bins, mu_bins)
