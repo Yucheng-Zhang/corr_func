@@ -66,10 +66,10 @@ def save_smu_arr(fn, smu_arr, s_bins, mu_bins, header=''):
 
 def save_s_arr(fn, s_arr, s_bins, s_eff, h='value'):
     '''Save s 1D array.'''
-    header += '{0:d} s bins, with edges:\n'.format(
+    header = '{0:d} s bins, with edges:\n'.format(
         len(s_bins) - 1) + np.array_str(s_bins) + '\n'
     header += '   s   {}'.format(h)
-    data = np.column_stack(s_eff, s_arr)
+    data = np.column_stack((s_eff, s_arr))
     np.savetxt(fn, data, header=header)
 
 
@@ -134,12 +134,13 @@ def extract_pc(DD, args):
     # weighted pair counts
     n_w = n_pc * w_ave
     # effective bin value
+    s_eff = np.average(s_ave, axis=1)
     mu_bw = (args.mu_max - 0.) / args.n_mu_bins
     mu_mid = np.array(
         [(i - 0.5) * mu_bw for i in range(1, args.n_mu_bins + 1)])
 
     # combine in dictionary
-    DD = {'s_bins': s_bins, 's_eff': s_ave, 'mu_bins': mu_bins,
+    DD = {'s_bins': s_bins, 's_eff': s_eff, 'mu_bins': mu_bins,
           'mu_eff': mu_mid, 'n_pc': n_pc, 'w_ave': w_ave, 'n_w': n_w}
 
     return DD
@@ -147,7 +148,7 @@ def extract_pc(DD, args):
 
 def calc_xi2d(DD, DR, RR, w_sum_d, w_sum_r, method='LS'):
     '''Estimator for correlation function with pair count.'''
-    if method = 'LS':
+    if method == 'LS':
         # weight ratio
         f = w_sum_d / w_sum_r
         print('>> Converting pair count to correlation function with Landy & Szalay method')
@@ -215,6 +216,7 @@ if __name__ == '__main__':
     RR = extract_pc(RR, args)
 
     xi2d = calc_xi2d(DD['n_w'], DR['n_w'], RR['n_w'], w_sum_d, w_sum_r)
+    save_smu_arr(args.out_xi_smu, xi2d, DD['s_bins'], DD['mu_bins'])
 
     xi_0 = calc_xi_pole(xi2d, DD['mu_eff'], 0)
     save_s_arr(args.out_xi_0, xi_0, DD['s_bins'], DD['s_eff'], h='xi_0')
