@@ -31,6 +31,10 @@ if __name__ == '__main__':
                         help='Maximum s in [Mpc/h]')
     parser.add_argument('-n_s_bins', type=int, default=32,
                         help='Number of s bins')
+
+    parser.add_argument('-verbose', type=int, default=0,
+                        help='Verbose for Corrfunc, 0 or 1')
+
     args = parser.parse_args()
 
 
@@ -64,11 +68,15 @@ if __name__ == '__main__':
     data = load_data_w_pd(args.data)
     n_data = len(data[:, 0])
     print('>> {0:d} data points'.format(n_data))
+    w_sum_d = np.sum(data[:, 3])
+    print('>> Sum of data weights: {0:f}'.format(w_sum_d))
 
     print('>> Loading random file: {}'.format(args.rand))
     rand = load_data_w_pd(args.rand)
     n_rand = len(rand[:, 0])
     print('>> {0:d} random points'.format(n_rand))
+    w_sum_r = np.sum(rand[:, 3])
+    print('>> Sum of random weights: {0:f}'.format(w_sum_r))
 
     print('>> Getting comoving distance from redshift')
     print('>> fiducial cosmology: H0 = {0:f}, OmegaM_0 = {1:f}'.format(
@@ -86,7 +94,7 @@ if __name__ == '__main__':
                      RA1=data[:, 0], DEC1=data[:, 1],
                      CZ1=data[:, 2], weights1=data[:, 3],
                      weight_type='pair_product', is_comoving_dist=True,
-                     output_savg=True, verbose=True)
+                     output_savg=True, verbose=args.verbose)
 
     print('>> Computing RR pair count')
     RR = DDsmu_mocks(autocorr=1, cosmology=1, nthreads=args.ncpu,
@@ -94,7 +102,7 @@ if __name__ == '__main__':
                      RA1=rand[:, 0], DEC1=rand[:, 1],
                      CZ1=rand[:, 2], weights1=rand[:, 3],
                      weight_type='pair_product', is_comoving_dist=True,
-                     output_savg=True, verbose=True)
+                     output_savg=True, verbose=args.verbose)
 
     print('>> Computing DR pair count')
     DR = DDsmu_mocks(autocorr=0, cosmology=1, nthreads=args.ncpu,
@@ -104,7 +112,7 @@ if __name__ == '__main__':
                      RA2=rand[:, 0], DEC2=rand[:, 1],
                      CZ2=rand[:, 2], weights2=rand[:, 3],
                      weight_type='pair_product', is_comoving_dist=True,
-                     output_savg=True, verbose=True)
+                     output_savg=True, verbose=args.verbose)
 
     del data
     del rand
@@ -136,13 +144,11 @@ if __name__ == '__main__':
     n_DD = n_DD * w_ave_DD
     n_DR = n_DR * w_ave_DR
     n_RR = n_RR * w_ave_RR
-    # normalize counts
-    DD_n = n_DD / (n_data * (n_data - 1.) / 2.)
-    DR_n = n_DR / (n_data * n_rand)
-    RR_n = n_RR / (n_rand * (n_rand - 1.) / 2.)
+    # weight ratio
+    f = w_sum_d / w_sum_r
 
     print('>> Converting pair count to correlation function with Landy & Szalay method')
-    xi2d = (DD_n - 2. * DR_n + RR_n) / RR_n
+    xi2d = (n_DD - 2. * f * n_DR + f**2 * n_RR) / (f**2 * n_RR)
 
     s_mid = (s_min + s_max) / 2.
     mu_bw = (args.mu_max - 0.) / args.n_mu_bins
@@ -156,3 +162,9 @@ if __name__ == '__main__':
     s_bins = np.concatenate((np.array([s_min[0]]), s_max))
     mu_bins = np.concatenate((np.array([0.]), mu_max))
     save_smu_arr('xi2d_test.dat', xi2d, s_bins, mu_bins)
+    save_smu_arr('n_DD_test.dat', n_DD, s_bins, mu_bins)
+    save_smu_arr('n_DR_test.dat', n_DR, s_bins, mu_bins)
+    save_smu_arr('n_RR_test.dat', n_RR, s_bins, mu_bins)
+    save_smu_arr('w_DD_test.dat', w_ave_DD, s_bins, mu_bins)
+    save_smu_arr('w_DR_test.dat', w_ave_DR, s_bins, mu_bins)
+    save_smu_arr('w_RR_test.dat', w_ave_RR, s_bins, mu_bins)
