@@ -66,12 +66,17 @@ def save_smu_arr(fn, smu_arr, s_bins, mu_bins, header=''):
     np.savetxt(fn, smu_arr, header=header)
 
 
-def save_s_arr(fn, s_arr, s_bins, s_eff, h='value'):
+def save_s_arr(fn, s_arr, s_bins, s_eff, h='value', s_err=None):
     '''Save s 1D array.'''
     header = '{0:d} s bins, with edges:\n'.format(
         len(s_bins) - 1) + np.array_str(s_bins) + '\n'
     header += '   s   {}'.format(h)
     data = np.column_stack((s_eff, s_arr))
+    # error bar provided
+    if s_err != None:
+        header += '   error-bar'
+        data = np.column_stack((data, s_err))
+
     np.savetxt(fn, data, header=header)
 
 
@@ -173,13 +178,17 @@ def calc_xi_pole(xi2d, mu, ell, method='spher_ave'):
         else:
             print('Only monopole and quadrupole are supported.')
             sys.exit()
-        xi_ell = 2 * np.sum(xi2d * L_mu, axis=1) * \
-            (2. * ell + 1.) / 2. / len(mu)
+        factor = 2. * (2. * ell + 1.) / 2.
+        tmp_arr = xi2d * L_mu
+        # average of all mu bins
+        xi_ell = factor * np.average(tmp_arr, axis=1)
+        # standard deviation of all mu bins
+        xi_std = factor * np.std(tmp_arr, axis=1)
     else:
         print('Wrong method.')
         sys.exit()
 
-    return xi_ell
+    return xi_ell, xi_std
 
 
 if __name__ == '__main__':
@@ -226,8 +235,10 @@ if __name__ == '__main__':
     xi2d = calc_xi2d(DD['n_w'], DR['n_w'], RR['n_w'], w_sum_d, w_sum_r)
     save_smu_arr(args.out_xi_smu, xi2d, DD['s_bins'], DD['mu_bins'])
 
-    xi_0 = calc_xi_pole(xi2d, DD['mu_eff'], 0)
-    save_s_arr(args.out_xi_0, xi_0, DD['s_bins'], DD['s_eff'], h='xi_0')
+    xi_0, xi_0_err = calc_xi_pole(xi2d, DD['mu_eff'], 0)
+    save_s_arr(args.out_xi_0, xi_0, DD['s_bins'],
+               DD['s_eff'], h='xi_0', s_err=xi_0_err)
 
-    xi_2 = calc_xi_pole(xi2d, DD['mu_eff'], 2)
-    save_s_arr(args.out_xi_2, xi_2, DD['s_bins'], DD['s_eff'], h='xi_2')
+    xi_2, xi_2_err = calc_xi_pole(xi2d, DD['mu_eff'], 2)
+    save_s_arr(args.out_xi_2, xi_2, DD['s_bins'],
+               DD['s_eff'], h='xi_2', s_err=xi_2_err)
