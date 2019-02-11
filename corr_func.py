@@ -40,6 +40,8 @@ if __name__ == '__main__':
     parser.add_argument('-out_xi_2', default='out_xi_2.dat',
                         help='Output quadrupole file')
 
+    parser.add_argument('-save_pc', type=int, default=1,
+                        help='Save pair count to file.')
     parser.add_argument('-verbose', type=int, default=0,
                         help='Verbose for Corrfunc, 0 or 1')
 
@@ -215,6 +217,11 @@ if __name__ == '__main__':
     DD = extract_pc(DD, args)
     DR = extract_pc(DR, args)
     RR = extract_pc(RR, args)
+
+    if args.save_pc:
+        save_smu_arr('DD_pc.dat', DD['n_w'], DD['s_bins'], DD['mu_bins'])
+        save_smu_arr('DR_pc.dat', DR['n_w'], DR['s_bins'], DR['mu_bins'])
+        save_smu_arr('RR_pc.dat', RR['n_w'], RR['s_bins'], RR['mu_bins'])
 
     xi2d = calc_xi2d(DD['n_w'], DR['n_w'], RR['n_w'], w_sum_d, w_sum_r)
     save_smu_arr(args.out_xi_smu, xi2d, DD['s_bins'], DD['mu_bins'])
