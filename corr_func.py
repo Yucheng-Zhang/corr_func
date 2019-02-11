@@ -6,6 +6,7 @@ import pandas as pd
 from Corrfunc.mocks.DDsmu_mocks import DDsmu_mocks
 from cosmo import cosmo_LCDM
 import argparse
+import sys
 
 if __name__ == '__main__':
     '''Input arguments.'''
@@ -32,6 +33,13 @@ if __name__ == '__main__':
     parser.add_argument('-n_s_bins', type=int, default=32,
                         help='Number of s bins')
 
+    parser.add_argument('-out_xi_smu', default='out_xi_smu.dat',
+                        help='Ouput xi(s,mu) file')
+    parser.add_argument('-out_xi_0', default='out_xi_0.dat',
+                        help='Output monopole file')
+    parser.add_argument('-out_xi_2', default='out_xi_2.dat',
+                        help='Output quadrupole file')
+
     parser.add_argument('-verbose', type=int, default=0,
                         help='Verbose for Corrfunc, 0 or 1')
 
@@ -46,9 +54,9 @@ def save_pc(fn, pc):
     np.savetxt(fn, data, header=header)
 
 
-def save_smu_arr(fn, smu_arr, s_bins, mu_bins):
+def save_smu_arr(fn, smu_arr, s_bins, mu_bins, header=''):
     '''Save s mu 2D array.'''
-    header = 'Same s for each row\n'
+    header += 'Same s for each row\n'
     header += '{0:d} s bins, with edges:\n'.format(
         len(s_bins) - 1) + np.array_str(s_bins) + '\n'
     header += '{0:d} mu bins, with edges:\n'.format(
@@ -56,10 +64,118 @@ def save_smu_arr(fn, smu_arr, s_bins, mu_bins):
     np.savetxt(fn, smu_arr, header=header)
 
 
+def save_s_arr(fn, s_arr, s_bins, s_eff, h='value'):
+    '''Save s 1D array.'''
+    header += '{0:d} s bins, with edges:\n'.format(
+        len(s_bins) - 1) + np.array_str(s_bins) + '\n'
+    header += '   s   {}'.format(h)
+    data = np.column_stack(s_eff, s_arr)
+    np.savetxt(fn, data, header=header)
+
+
 def load_data_w_pd(fn):
     '''Read input data with pandas.'''
     tb = pd.read_table(fn, delim_whitespace=True, comment='#', header=None)
     return tb.values
+
+
+def pc_radecz_smu(data, rand, args, binfile):
+    '''>> Pair count in (s, mu) with RA, DEC, comoving radial distance input.'''
+
+    print('>> Computing DD pair count')
+    DD = DDsmu_mocks(autocorr=1, cosmology=1, nthreads=args.ncpu,
+                     mu_max=1.0, nmu_bins=args.n_mu_bins, binfile=binfile,
+                     RA1=data[:, 0], DEC1=data[:, 1],
+                     CZ1=data[:, 2], weights1=data[:, 3],
+                     weight_type='pair_product', is_comoving_dist=True,
+                     output_savg=True, verbose=args.verbose)
+
+    print('>> Computing RR pair count')
+    RR = DDsmu_mocks(autocorr=1, cosmology=1, nthreads=args.ncpu,
+                     mu_max=1.0, nmu_bins=args.n_mu_bins, binfile=binfile,
+                     RA1=rand[:, 0], DEC1=rand[:, 1],
+                     CZ1=rand[:, 2], weights1=rand[:, 3],
+                     weight_type='pair_product', is_comoving_dist=True,
+                     output_savg=True, verbose=args.verbose)
+
+    print('>> Computing DR pair count')
+    DR = DDsmu_mocks(autocorr=0, cosmology=1, nthreads=args.ncpu,
+                     mu_max=1.0, nmu_bins=args.n_mu_bins, binfile=binfile,
+                     RA1=data[:, 0], DEC1=data[:, 1],
+                     CZ1=data[:, 2], weights1=data[:, 3],
+                     RA2=rand[:, 0], DEC2=rand[:, 1],
+                     CZ2=rand[:, 2], weights2=rand[:, 3],
+                     weight_type='pair_product', is_comoving_dist=True,
+                     output_savg=True, verbose=args.verbose)
+
+    return DD, DR, RR
+
+
+def extract_pc(DD, args):
+    '''Extract results from pair count.'''
+
+    def re_shape(arr):
+        '''reshape to same s bin for each row'''
+        return np.reshape(arr, (args.n_s_bins, args.n_mu_bins))
+
+    # the data are given in the same s bin, different mu bins order
+    s_min = re_shape(np.array([p['smin'] for p in DD]))[:, 0]
+    s_max = re_shape(np.array([p['smax'] for p in DD]))[:, 0]
+    mu_max = re_shape(np.array([p['mumax'] for p in DD]))[0, :]
+    # bin edges
+    s_bins = np.concatenate((np.array([s_min[0]]), s_max))
+    mu_bins = np.concatenate((np.array([0.]), mu_max))
+    # average s in each bin
+    s_ave = re_shape(np.array([p['savg'] for p in DD]))
+    # pair counts
+    n_pc = re_shape(np.array([p['npairs'] for p in DD]))
+    # average weight
+    w_ave = re_shape(np.array([p['weightavg'] for p in DD]))
+    # weighted pair counts
+    n_w = n_pc * w_ave
+    # effective bin value
+    mu_bw = (args.mu_max - 0.) / args.n_mu_bins
+    mu_mid = np.array(
+        [(i - 0.5) * mu_bw for i in range(1, args.n_mu_bins + 1)])
+
+    # combine in dictionary
+    DD = {'s_bins': s_bins, 's_eff': s_ave, 'mu_bins': mu_bins,
+          'mu_eff': mu_mid, 'n_pc': n_pc, 'w_ave': w_ave, 'n_w': n_w}
+
+    return DD
+
+
+def calc_xi2d(DD, DR, RR, w_sum_d, w_sum_r, method='LS'):
+    '''Estimator for correlation function with pair count.'''
+    if method = 'LS':
+        # weight ratio
+        f = w_sum_d / w_sum_r
+        print('>> Converting pair count to correlation function with Landy & Szalay method')
+        xi2d = (DD - 2. * f * DR + f**2 * RR) / (f**2 * RR)
+    else:
+        print('Wrong method.')
+        sys.exit()
+
+    return xi2d
+
+
+def calc_xi_pole(xi2d, mu, ell, method='spher_ave'):
+    '''Get multipole from xi(s,mu).'''
+    if method == 'spher_ave':
+        print('>> Computing spherically averaged monopole')
+        if ell == 0:
+            L_mu = np.ones(len(mu))
+        elif ell == 2:
+            L_mu = (3. * np.power(mu, 2) - 1.) / 2.
+        else:
+            print('Only monopole and quadrupole are supported.')
+            sys.exit()
+        xi_ell = np.sum(xi2d * L_mu, axis=1) * (2. * ell + 1.) / 2. / len(mu)
+    else:
+        print('Wrong method.')
+        sys.exit()
+
+    return xi_ell
 
 
 if __name__ == '__main__':
@@ -88,83 +204,20 @@ if __name__ == '__main__':
     print('>> Getting bin file for s')
     binfile = np.linspace(args.s_min, args.s_max, args.n_s_bins + 1)
 
-    print('>> Computing DD pair count')
-    DD = DDsmu_mocks(autocorr=1, cosmology=1, nthreads=args.ncpu,
-                     mu_max=1.0, nmu_bins=args.n_mu_bins, binfile=binfile,
-                     RA1=data[:, 0], DEC1=data[:, 1],
-                     CZ1=data[:, 2], weights1=data[:, 3],
-                     weight_type='pair_product', is_comoving_dist=True,
-                     output_savg=True, verbose=args.verbose)
-
-    print('>> Computing RR pair count')
-    RR = DDsmu_mocks(autocorr=1, cosmology=1, nthreads=args.ncpu,
-                     mu_max=1.0, nmu_bins=args.n_mu_bins, binfile=binfile,
-                     RA1=rand[:, 0], DEC1=rand[:, 1],
-                     CZ1=rand[:, 2], weights1=rand[:, 3],
-                     weight_type='pair_product', is_comoving_dist=True,
-                     output_savg=True, verbose=args.verbose)
-
-    print('>> Computing DR pair count')
-    DR = DDsmu_mocks(autocorr=0, cosmology=1, nthreads=args.ncpu,
-                     mu_max=1.0, nmu_bins=args.n_mu_bins, binfile=binfile,
-                     RA1=data[:, 0], DEC1=data[:, 1],
-                     CZ1=data[:, 2], weights1=data[:, 3],
-                     RA2=rand[:, 0], DEC2=rand[:, 1],
-                     CZ2=rand[:, 2], weights2=rand[:, 3],
-                     weight_type='pair_product', is_comoving_dist=True,
-                     output_savg=True, verbose=args.verbose)
+    DD, DR, RR = pc_radecz_smu(data, rand, args, binfile)
 
     del data
     del rand
 
     print('>> Extracting data')
+    DD = extract_pc(DD, args)
+    DR = extract_pc(DR, args)
+    RR = extract_pc(RR, args)
 
-    def re_shape(arr):
-        '''reshape to same s bin for each row'''
-        return np.reshape(arr, (args.n_s_bins, args.n_mu_bins))
-    # DD, DR, RR have the same smin, smax and mumax, so use any one
-    # the data are given in the same s bin, different mu bins order
-    s_min = re_shape(np.array([p['smin'] for p in DD]))[:, 0]
-    s_max = re_shape(np.array([p['smax'] for p in DD]))[:, 0]
-    mu_max = re_shape(np.array([p['mumax'] for p in DD]))[0, :]
+    xi2d = calc_xi2d(DD['n_w'], DR['n_w'], RR['n_w'], w_sum_d, w_sum_r)
 
-    # average s in each bin, different for DD, DR and RR
-    s_ave_DD = re_shape(np.array([p['savg'] for p in DD]))
-    s_ave_DR = re_shape(np.array([p['savg'] for p in DR]))
-    s_ave_RR = re_shape(np.array([p['savg'] for p in RR]))
-    # pair counts
-    n_DD = re_shape(np.array([p['npairs'] for p in DD]))
-    n_DR = re_shape(np.array([p['npairs'] for p in DR]))
-    n_RR = re_shape(np.array([p['npairs'] for p in RR]))
-    # average weight
-    w_ave_DD = re_shape(np.array([p['weightavg'] for p in DD]))
-    w_ave_DR = re_shape(np.array([p['weightavg'] for p in DR]))
-    w_ave_RR = re_shape(np.array([p['weightavg'] for p in RR]))
-    # weighted pair counts
-    n_DD = n_DD * w_ave_DD
-    n_DR = n_DR * w_ave_DR
-    n_RR = n_RR * w_ave_RR
-    # weight ratio
-    f = w_sum_d / w_sum_r
+    xi_0 = calc_xi_pole(xi2d, DD['mu_eff'], 0)
+    save_s_arr(args.out_xi_0, xi_0, DD['s_bins'], DD['s_eff'], h='xi_0')
 
-    print('>> Converting pair count to correlation function with Landy & Szalay method')
-    xi2d = (n_DD - 2. * f * n_DR + f**2 * n_RR) / (f**2 * n_RR)
-
-    s_mid = (s_min + s_max) / 2.
-    mu_bw = (args.mu_max - 0.) / args.n_mu_bins
-    mu_mid = np.array(
-        [(i - 0.5) * mu_bw for i in range(1, args.n_mu_bins + 1)])
-
-    print('>> Computing spherically averaged monopole')
-    xi_0 = 0.5 * np.sum(xi2d * mu_mid, axis=1) / args.n_mu_bins
-    print(xi_0)
-
-    s_bins = np.concatenate((np.array([s_min[0]]), s_max))
-    mu_bins = np.concatenate((np.array([0.]), mu_max))
-    save_smu_arr('xi2d_test.dat', xi2d, s_bins, mu_bins)
-    save_smu_arr('n_DD_test.dat', n_DD, s_bins, mu_bins)
-    save_smu_arr('n_DR_test.dat', n_DR, s_bins, mu_bins)
-    save_smu_arr('n_RR_test.dat', n_RR, s_bins, mu_bins)
-    save_smu_arr('w_DD_test.dat', w_ave_DD, s_bins, mu_bins)
-    save_smu_arr('w_DR_test.dat', w_ave_DR, s_bins, mu_bins)
-    save_smu_arr('w_RR_test.dat', w_ave_RR, s_bins, mu_bins)
+    xi_2 = calc_xi_pole(xi2d, DD['mu_eff'], 2)
+    save_s_arr(args.out_xi_2, xi_2, DD['s_bins'], DD['s_eff'], h='xi_2')
