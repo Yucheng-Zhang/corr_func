@@ -171,7 +171,8 @@ def calc_xi_pole(xi2d, mu, ell, method='spher_ave'):
         else:
             print('Only monopole and quadrupole are supported.')
             sys.exit()
-        xi_ell = np.sum(xi2d * L_mu, axis=1) * (2. * ell + 1.) / 2. / len(mu)
+        xi_ell = 2 * np.sum(xi2d * L_mu, axis=1) * \
+            (2. * ell + 1.) / 2. / len(mu)
     else:
         print('Wrong method.')
         sys.exit()
