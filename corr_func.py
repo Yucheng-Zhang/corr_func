@@ -75,7 +75,7 @@ def save_s_arr(fn, s_arr, s_bins, s_eff, h='value', s_err=None):
     header += '   s   {}'.format(h)
     data = np.column_stack((s_eff, s_arr))
     # error bar provided
-    if s_err != None:
+    if s_err is not None:
         header += '   error-bar'
         data = np.column_stack((data, s_err))
 
