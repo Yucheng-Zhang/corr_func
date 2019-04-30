@@ -145,7 +145,8 @@ def extract_pc(DD, args):
     # weighted pair counts
     n_w = n_pc * w_ave
     # effective bin value
-    s_eff = np.average(s_ave, axis=1)
+    s_eff = np.average(s_ave, axis=1, weights=n_w)
+
     mu_bw = (args.mu_max - 0.) / args.n_mu_bins
     mu_mid = np.array(
         [(i - 0.5) * mu_bw for i in range(1, args.n_mu_bins + 1)])
