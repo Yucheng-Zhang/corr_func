@@ -32,6 +32,8 @@ if __name__ == '__main__':
                         help='Maximum s in [Mpc/h]')
     parser.add_argument('-n_s_bins', type=int, default=32,
                         help='Number of s bins')
+    parser.add_argument('-bin_type', type=str, default='linear',
+                        help='Evenly binned in linear or log scale.')
 
     parser.add_argument('-out_xi_smu', default='out_xi_smu.dat',
                         help='Ouput xi(s,mu) file')
@@ -225,7 +227,13 @@ if __name__ == '__main__':
     rand[:, 2] = cosmo.z2chi(rand[:, 2])
 
     print('>> Getting bin file for s')
-    binfile = np.linspace(args.s_min, args.s_max, args.n_s_bins + 1)
+    if args.bin_type == 'linear':
+        binfile = np.linspace(args.s_min, args.s_max, args.n_s_bins + 1)
+    elif args.bin_type == 'log':
+        binfile = np.logspace(np.log10(args.s_min),
+                              np.log10(args.s_max), args.n_s_bins + 1)
+    else:
+        sys.exit('Wrong -bin_type.')
 
     DD, DR, RR = pc_radecz_smu(data, rand, args, binfile)
 
