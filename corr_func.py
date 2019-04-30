@@ -35,6 +35,8 @@ if __name__ == '__main__':
 
     parser.add_argument('-out_xi_smu', default='out_xi_smu.dat',
                         help='Ouput xi(s,mu) file')
+    parser.add_argument('-out_xi_s', default='out_xi_s.dat',
+                        help='Output xi(s) file.')
     parser.add_argument('-out_xi_0', default='out_xi_0.dat',
                         help='Output monopole file')
     parser.add_argument('-out_xi_2', default='out_xi_2.dat',
@@ -161,10 +163,20 @@ def calc_xi2d(DD, DR, RR, w_sum_d, w_sum_r, method='LS'):
         print('>> Converting pair count to correlation function with Landy & Szalay method')
         xi2d = (DD - 2. * f * DR + f**2 * RR) / (f**2 * RR)
     else:
-        print('Wrong method.')
-        sys.exit()
+        sys.exit('Wrong method.')
 
     return xi2d
+
+
+def calc_xi_s(xi2d, method='spher_ave'):
+    '''Get xi(s) from xi(s,mu).'''
+    if method == 'spher_ave':
+        print('>> Computing spherically averaged xi(s)')
+        xi_s = np.average(xi2d, axis=1)
+    else:
+        sys.exit('Wrong method.')
+
+    return xi_s
 
 
 def calc_xi_pole(xi2d, mu, ell, method='spher_ave'):
@@ -176,8 +188,7 @@ def calc_xi_pole(xi2d, mu, ell, method='spher_ave'):
         elif ell == 2:
             L_mu = (3. * np.power(mu, 2) - 1.) / 2.
         else:
-            print('Only monopole and quadrupole are supported.')
-            sys.exit()
+            sys.exit('Only monopole and quadrupole are supported.')
         factor = 2. * (2. * ell + 1.) / 2.
         tmp_arr = xi2d * L_mu
         # average of all mu bins
@@ -185,8 +196,7 @@ def calc_xi_pole(xi2d, mu, ell, method='spher_ave'):
         # standard deviation of all mu bins
         xi_std = factor * np.std(tmp_arr, axis=1)
     else:
-        print('Wrong method.')
-        sys.exit()
+        sys.exit('Wrong method.')
 
     return xi_ell, xi_std
 
@@ -234,6 +244,9 @@ if __name__ == '__main__':
 
     xi2d = calc_xi2d(DD['n_w'], DR['n_w'], RR['n_w'], w_sum_d, w_sum_r)
     save_smu_arr(args.out_xi_smu, xi2d, DD['s_bins'], DD['mu_bins'])
+
+    xi_s = calc_xi_s(xi2d)
+    save_s_arr(args.out_xi_s, xi_s, DD['s_bins'], DD['s_eff'], h='xi(s)')
 
     xi_0, xi_0_err = calc_xi_pole(xi2d, DD['mu_eff'], 0)
     save_s_arr(args.out_xi_0, xi_0, DD['s_bins'],
