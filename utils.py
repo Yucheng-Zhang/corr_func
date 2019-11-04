@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 
-def load_data_pd(fn, tp=''):
+def load_data_pd(fn):
     '''Load data file.'''
     print('>> Loading data: {}'.format(fn))
     df = pd.read_csv(fn, delim_whitespace=True, comment='#', header=None)
