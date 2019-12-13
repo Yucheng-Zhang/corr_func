@@ -4,6 +4,7 @@ from astropy.cosmology import FlatLambdaCDM
 from astropy.io import fits
 import multiprocessing
 from .utils import load_data_pd
+import sys
 
 
 class corr:
@@ -83,6 +84,18 @@ class corr:
 
         self.rand = np.column_stack((ra, dec, z_dist, weight))
         self.rand_w_sum = np.sum(weight)
+
+    def read_rdzw(self, rdzw, dat_or_ran):
+        '''load ra, dec, redshift, weight'''
+        rdzw[:, 2] = self.cosmo.comoving_distance(rdzw[:, 2].value * self.h)
+        if dat_or_ran == 'data':
+            self.data = rdzw
+            self.data_w_sum = np.sum(rdzw[:, 3])
+        elif dat_or_ran == 'rand':
+            self.rand = rdzw
+            self.rand_w_sum = np.sum(rdzw[:, 3])
+        else:
+            sys.exit('data or rand')
 
     def extract_pc(self, PC):
         '''extract results from Corrfunc pair count'''
