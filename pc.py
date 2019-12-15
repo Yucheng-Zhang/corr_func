@@ -87,7 +87,7 @@ class corr:
 
     def read_rdzw(self, rdzw, dat_or_ran):
         '''load ra, dec, redshift, weight'''
-        rdzw[:, 2] = self.cosmo.comoving_distance(rdzw[:, 2] * self.h)
+        rdzw[:, 2] = self.cosmo.comoving_distance(rdzw[:, 2]).value * self.h
         if dat_or_ran == 'data':
             self.data = rdzw
             self.data_w_sum = np.sum(rdzw[:, 3])
